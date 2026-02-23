@@ -2,12 +2,12 @@
 
 --[[
     Temporary Stat Library by Kerkel
-    Version 1.0
+    Version 1.1
 ]]
 
 ---@param GetData fun(entity: Entity): TempStatEntry[] Returns a persistent player-specific table used only for temporary stat data
 return function (GetData)
-    local VERSION = 1
+    local VERSION = 2
 
     if TempStatLib then
         if TempStatLib.Internal.VERSION > VERSION then return end
@@ -61,34 +61,125 @@ return function (GetData)
                 end
             end
         },
-        {
+    }
+
+    if REPENTOGON then
+        TempStatLib.Internal.CallbackEntries[#TempStatLib.Internal.CallbackEntries + 1] = {
             ModCallbacks.MC_EVALUATE_CACHE,
-            CallbackPriority.DEFAULT,
+            CallbackPriority.EARLY,
             ---@param player EntityPlayer
             ---@param flag CacheFlag
             function (_, player, flag)
-                local data = TempStatLib:GetData(player)
-
-                if #data > 0 then
+                if flag == CacheFlag.CACHE_SHOTSPEED then
+                    local data = TempStatLib:GetData(player)
                     for _, v in ipairs(data) do
-                        if v.Stat == CacheFlag.CACHE_DAMAGE and flag == CacheFlag.CACHE_DAMAGE then
-                            player.Damage = player.Damage + v.Amount
-                        elseif v.Stat == CacheFlag.CACHE_FIREDELAY and flag == CacheFlag.CACHE_FIREDELAY then
-                            player.MaxFireDelay = 30 / (30 / (player.MaxFireDelay + 1) + v.Amount) - 1
-                        elseif v.Stat == CacheFlag.CACHE_SHOTSPEED and flag == CacheFlag.CACHE_SHOTSPEED then
+                        if v.Stat == CacheFlag.CACHE_SHOTSPEED then
                             player.ShotSpeed = player.ShotSpeed + v.Amount
-                        elseif v.Stat == CacheFlag.CACHE_RANGE and flag == CacheFlag.CACHE_RANGE then
+                        end
+                    end
+                elseif flag == CacheFlag.CACHE_RANGE then
+                    local data = TempStatLib:GetData(player)
+                    for _, v in ipairs(data) do
+                        if v.Stat == CacheFlag.CACHE_RANGE then
                             player.TearRange = player.TearRange + v.Amount * 40
-                        elseif v.Stat == CacheFlag.CACHE_SPEED and flag == CacheFlag.CACHE_SPEED then
+                        end
+                    end
+                elseif flag == CacheFlag.CACHE_SPEED then
+                    local data = TempStatLib:GetData(player)
+                    for _, v in ipairs(data) do
+                        if v.Stat == CacheFlag.CACHE_SPEED then
                             player.MoveSpeed = player.MoveSpeed + v.Amount
-                        elseif v.Stat == CacheFlag.CACHE_LUCK and flag == CacheFlag.CACHE_LUCK then
+                        end
+                    end
+                elseif flag == CacheFlag.CACHE_LUCK then
+                    local data = TempStatLib:GetData(player)
+                    for _, v in ipairs(data) do
+                        if v.Stat == CacheFlag.CACHE_LUCK then
                             player.Luck = player.Luck + v.Amount
                         end
                     end
                 end
             end
         }
-    }
+        TempStatLib.Internal.CallbackEntries[#TempStatLib.Internal.CallbackEntries + 1] = {
+            ModCallbacks.MC_EVALUATE_STAT,
+            CallbackPriority.DEFAULT,
+            ---@param player EntityPlayer
+            ---@param stage EvaluateStatStage
+            ---@param value number
+            function (_, player, stage, value)
+                if stage == EvaluateStatStage.FLAT_TEARS then
+                    local data = TempStatLib:GetData(player)
+                    for _, v in ipairs(data) do
+                        if v.Stat == CacheFlag.CACHE_FIREDELAY then
+                            value = value + v.Amount
+                        end
+                    end
+                    return value
+                elseif stage == EvaluateStatStage.DAMAGE_UP then
+                    local data = TempStatLib:GetData(player)
+                    for _, v in ipairs(data) do
+                        if v.Stat == CacheFlag.CACHE_DAMAGE then
+                            value = value + v.Amount
+                        end
+                    end
+                    return value
+                end
+            end
+        }
+    else
+        TempStatLib.Internal.CallbackEntries[#TempStatLib.Internal.CallbackEntries + 1] = {
+            ModCallbacks.MC_EVALUATE_CACHE,
+            CallbackPriority.EARLY,
+            ---@param player EntityPlayer
+            ---@param flag CacheFlag
+            function (_, player, flag)
+                if flag == CacheFlag.CACHE_DAMAGE then
+                    local data = TempStatLib:GetData(player)
+                    for _, v in ipairs(data) do
+                        if v.Stat == CacheFlag.CACHE_DAMAGE then
+                            player.Damage = player.Damage + v.Amount
+                        end
+                    end
+                elseif flag == CacheFlag.CACHE_FIREDELAY then
+                    local data = TempStatLib:GetData(player)
+                    for _, v in ipairs(data) do
+                        if v.Stat == CacheFlag.CACHE_FIREDELAY then
+                            player.MaxFireDelay = 30 / (30 / (player.MaxFireDelay + 1) + v.Amount) - 1
+                        end
+                    end
+                elseif flag == CacheFlag.CACHE_SHOTSPEED then
+                    local data = TempStatLib:GetData(player)
+                    for _, v in ipairs(data) do
+                        if v.Stat == CacheFlag.CACHE_SHOTSPEED then
+                            player.ShotSpeed = player.ShotSpeed + v.Amount
+                        end
+                    end
+                elseif flag == CacheFlag.CACHE_RANGE then
+                    local data = TempStatLib:GetData(player)
+                    for _, v in ipairs(data) do
+                        if v.Stat == CacheFlag.CACHE_RANGE then
+                            player.TearRange = player.TearRange + v.Amount * 40
+                        end
+                    end
+                elseif flag == CacheFlag.CACHE_SPEED then
+                    local data = TempStatLib:GetData(player)
+                    for _, v in ipairs(data) do
+                        if v.Stat == CacheFlag.CACHE_SPEED then
+                            player.MoveSpeed = player.MoveSpeed + v.Amount
+                        end
+                    end
+                elseif flag == CacheFlag.CACHE_LUCK then
+                    local data = TempStatLib:GetData(player)
+                    for _, v in ipairs(data) do
+                        if v.Stat == CacheFlag.CACHE_LUCK then
+                            player.Luck = player.Luck + v.Amount
+                        end
+                    end
+                end
+            end
+        }
+    end
 
     for _, v in ipairs(TempStatLib.Internal.CallbackEntries) do
         TempStatLib:AddPriorityCallback(v[1], v[2], v[3], v[4])
